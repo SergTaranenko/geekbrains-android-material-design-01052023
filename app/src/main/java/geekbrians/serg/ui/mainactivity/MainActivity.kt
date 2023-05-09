@@ -15,10 +15,19 @@ import com.google.android.material.snackbar.Snackbar
 import geekbrians.serg.R
 import geekbrians.serg.ui.mainactivity.listeners.BottomNavItemSelectedListener
 import geekbrians.serg.ui.mainactivity.listeners.SideNavItemSelectedListener
+import androidx.core.content.ContextCompat
+import androidx.core.view.ViewCompat
+import com.google.android.material.appbar.AppBarLayout
+import com.google.android.material.appbar.CollapsingToolbarLayout
+import com.google.android.material.floatingactionbutton.FloatingActionButton
 
 class MainActivity : AppCompatActivity() {
     private lateinit var navigation: BottomNavigationView
     private lateinit var toolbar: Toolbar
+    private lateinit var appBarLayout: AppBarLayout
+    private lateinit var collapsingToolbarLayout: CollapsingToolbarLayout
+    private lateinit var fab: FloatingActionButton
+
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         menuInflater.inflate(R.menu.search, menu)
         return super.onCreateOptionsMenu(menu)
@@ -39,16 +48,61 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+
         toolbar = findViewById(R.id.toolbar)
         setSupportActionBar(toolbar)
+
+        appBarLayout = findViewById(R.id.appBarLayout)
+        collapsingToolbarLayout = findViewById(R.id.collapsingToolbarLayout)
+        fab = findViewById(R.id.fab)
+
+        collapsingToolbarLayout.setTitle(" ")
+        collapsingToolbarLayout.setExpandedTitleColor(ContextCompat.getColor(this, android.R.color.transparent))
+
+        appBarLayout.addOnOffsetChangedListener(object: AppBarLayout.OnOffsetChangedListener {
+            var isShown = true
+            var scrollRange = -1
+
+            override fun onOffsetChanged(appBarLayout: AppBarLayout, verticalOffset: Int) {
+                if (scrollRange == -1) {
+                    scrollRange = appBarLayout.totalScrollRange
+                }
+                if (scrollRange + verticalOffset == 0) {
+                    // Collapsed
+                    collapsingToolbarLayout.setTitle("Title")
+                    if (isShown) {
+                        isShown = false
+                        ViewCompat.animate(fab)
+                            .scaleX(0.0f).scaleY(0.0f)
+                            .alpha(0.0f)
+                            .setDuration(500)
+                            .start()
+                    }
+                } else {
+                    // Expanded
+                    collapsingToolbarLayout.setTitle(" ")
+                    if (!isShown) {
+                        isShown = true
+                        ViewCompat.animate(fab)
+                            .scaleX(1.0f).scaleY(1.0f)
+                            .alpha(1.0f)
+                            .setDuration(500)
+                            .start()
+                    }
+                }
+            }
+        })
+
         val viewPager = findViewById<ViewPager>(R.id.view_pager)
         val adapter = AppFragmentPageAdapter(supportFragmentManager)
         viewPager.adapter = adapter
         viewPager.offscreenPageLimit = adapter.count - 1
+
         navigation = findViewById(R.id.navigation)
         val listener = BottomNavItemSelectedListener(viewPager, toolbar)
         navigation.setOnNavigationItemSelectedListener(listener)
-        bindNavigationDrawer()
+
+        bindNavigationDrawer
         initTitle()
     }
 
@@ -67,6 +121,7 @@ class MainActivity : AppCompatActivity() {
         )
         drawer.addDrawerListener(toggle)
         toggle.syncState()
+
         val navigationView = findViewById<NavigationView>(R.id.nav_view)
         val listener = SideNavItemSelectedListener(drawer, navigation)
         navigationView.setNavigationItemSelectedListener(listener)
